@@ -114,9 +114,9 @@ class VocalTractEquations():
         # Paramètres
         self.ell_vec  = sy.symbols('ell_1:{}'.format(self.N+1), **PPTY_PHY_PARAMS)
         self.L_vec    = sy.symbols('L_1:{}'.format(self.N+1),   **PPTY_PHY_PARAMS)
-        self.rho_0    = sy.symbols('rho_0')
+        self.rho_0    = sy.symbols('rho_0', **PPTY_PHY_PARAMS)
         self.V0_vec   = sy.symbols('V_0_1:{}'.format(self.N+1), **PPTY_PHY_PARAMS)
-        self.gamma    = sy.symbols('\gamma', **PPTY_PHY_PARAMS)
+        self.gamma    = sy.symbols('gamma', **PPTY_PHY_PARAMS)
         self.P0    = sy.symbols('P_0', **PPTY_PHY_PARAMS)
         
         # ------ États contraints ------
