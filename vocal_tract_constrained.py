@@ -96,6 +96,9 @@ class VocalTractEquations():
         
         for i in range(self.N_lambda):
             self.observers[self.O[i]] = self.update_Delta_eq[i] 
+
+        # Dissipations
+        self.compute_zw()
             
         # Ports
         self.Y = [-self.qL, self.qR, *[-1*symb for symb in self.vw_vec]]
@@ -347,7 +350,11 @@ class VocalTractEquations():
     ''' ==================================== '''
     ''' =========== Dissipation ============ '''
     def compute_zw(self):
-        pass
+        self.zw = []
+        for i in range(self.N):
+            tract_ind = i+1
+            expr = 8*sy.pi*self.mu0*4*self.ell(tract_ind)**2/self.vol(tract_ind)
+            self.zw.append(expr)
         
     ''' =========================================== '''
     ''' =================== Accesseurs ============ '''
