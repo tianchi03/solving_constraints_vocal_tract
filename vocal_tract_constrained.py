@@ -82,6 +82,7 @@ class VocalTractEquations():
         
         self.compute_Jxx()
         self.compute_Jyx()
+        self.compute_Jwx()
         
         self.compute_cstrnd_Ham()
         
@@ -117,7 +118,8 @@ class VocalTractEquations():
         self.rho_0    = sy.symbols('rho_0', **PPTY_PHY_PARAMS)
         self.V0_vec   = sy.symbols('V_0_1:{}'.format(self.N+1), **PPTY_PHY_PARAMS)
         self.gamma    = sy.symbols('gamma', **PPTY_PHY_PARAMS)
-        self.P0    = sy.symbols('P_0', **PPTY_PHY_PARAMS)
+        self.P0       = sy.symbols('P_0', **PPTY_PHY_PARAMS)
+        self.mu0      = sy.symbols('mu_0', **PPTY_PHY_PARAMS) # viscosité
         
         # ------ États contraints ------
         self.nu_nm_vec = []
@@ -247,7 +249,7 @@ class VocalTractEquations():
     
     def compute_permutation_matrix(self):
         '''
-        Creates a permutatio matrix to rearrange the original J matrix
+        Creates a permutation matrix to rearrange the original J matrix
         into one that fits the format of document/article.
         '''
         self.P = sy.SparseMatrix(sy.zeros(self.Nx))
@@ -268,6 +270,11 @@ class VocalTractEquations():
         self.Jyx[0,0] = -1
         self.Jyx[1, 2*self.N-1] = 1
         self.Jyx[2::,2*self.N:3*self.N] = -1* sy.eye(self.N)
+
+    def compute_Jwx(self):
+        self.Jwx = sy.SparseMatrix(sy.zeros(2*self.N,
+                                            self.Nxi*self.N-self.N_lambda))
+        self.Jwx[::2*self.N, ::2*self.N] = sy.SparseMatrix(sy.eye(2*self.N))
 
     ''' =========================================== '''
     ''' ======= Changement de variable ============ '''
