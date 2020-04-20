@@ -51,10 +51,16 @@ class VocalTractLumpedParameter(VocalTractBase):
         
         # Ports
         self.add_ports(equations.U, equations.Y)
+
+        # Dissipations
+        for i, w in enumerate(equations.w):
+            zw = w * equations.zw[i]
+            self.add_dissipations(w, zw)
         
         # Interconnexion matrix
         self.set_Jxx(equations.Jxx)
         self.set_Jyx(equations.Jyx)
+        self.set_Jwx(equations.Jwx)
         
         # Valeurs des subs
         self.subs.update(
@@ -286,9 +292,9 @@ class VocalTractEquations():
         self.Jyx[2::,2*self.N:3*self.N] = -1* sy.eye(self.N)
 
     def compute_Jwx(self):
-        self.Jwx = sy.SparseMatrix(sy.zeros(2*self.N,
+        self.Jwx = sy.SparseMatrix(sy.zeros(self.N+1,
                                             self.Nxi*self.N-self.N_lambda))
-        self.Jwx[0:2*self.N, 0:2*self.N] = sy.SparseMatrix(sy.eye(2*self.N))
+        self.Jwx[0:self.N+1, 0:self.N+1] = sy.SparseMatrix(sy.eye(self.N+1))
 
     ''' =========================================== '''
     ''' ======= Changement de variable ============ '''
@@ -355,7 +361,7 @@ class VocalTractEquations():
     ''' ==================================== '''
     ''' =========== Dissipation ============ '''
     def compute_w(self):
-        w = [self.qL, *(self.q_nm_vec), self.qR]
+        self.w = [self.qL, *(self.q_nm_vec), self.qR]
 
     def compute_zw(self):
         self.zw = []
