@@ -80,6 +80,7 @@ class VocalTractEquations():
         
         self.compute_Delta_update_eq()
         
+        # Matrice d'interconnexion
         self.compute_Jxx()
         self.compute_Jyx()
         self.compute_Jwx()
@@ -98,6 +99,7 @@ class VocalTractEquations():
             self.observers[self.O[i]] = self.update_Delta_eq[i] 
 
         # Dissipations
+        self.compute_w()
         self.compute_zw()
             
         # Ports
@@ -118,8 +120,8 @@ class VocalTractEquations():
         # Paramètres
         self.ell_vec  = sy.symbols('ell_1:{}'.format(self.N+1), **PPTY_PHY_PARAMS)
         self.L_vec    = sy.symbols('L_1:{}'.format(self.N+1),   **PPTY_PHY_PARAMS)
-        self.rho_0    = sy.symbols('rho_0', **PPTY_PHY_PARAMS)
         self.V0_vec   = sy.symbols('V_0_1:{}'.format(self.N+1), **PPTY_PHY_PARAMS)
+        self.rho_0    = sy.symbols('rho_0', **PPTY_PHY_PARAMS)
         self.gamma    = sy.symbols('gamma', **PPTY_PHY_PARAMS)
         self.P0       = sy.symbols('P_0', **PPTY_PHY_PARAMS)
         self.mu0      = sy.symbols('mu_0', **PPTY_PHY_PARAMS) # viscosité
@@ -136,10 +138,13 @@ class VocalTractEquations():
             self.delta_nm_vec.append(tmp_symb)
         
         # Dissipations fluide
-        self.qL_vec = sy.symbols('q_L:{}'.format(self.N+1), **PPTY_STATE_VAR)
-        self.qR_vec = sy.symbols('q_R:{}'.format(self.N+1), **PPTY_STATE_VAR)
-        self.psiL_vec = sy.symbols('Psi_L:{}^mu'.format(self.N+1), **PPTY_STATE_VAR)
-        self.psiR_vec = sy.symbols('Psi_R:{}^mu'.format(self.N+1), **PPTY_STATE_VAR)
+        self.q_nm_vec   = []
+        self.psi_nm_vec = []
+        for i in range(self.N - 1):
+            tmp_symb = sy.symbols('q_{0}{1}^mu'.format(i+1,i+2), **PPTY_STATE_VAR)
+            self.q_nm_vec.append(tmp_symb)
+            tmp_symb = sy.symbols('psi_{0}{1}^mu'.format(i+1,i+2), **PPTY_STATE_VAR)
+            self.psi_nm_vec.append(tmp_symb)
         
         # Ports
         self.psiL, self.psiR = sy.symbols('Psi_L Psi_R', **PPTY_STATE_VAR)
@@ -349,12 +354,27 @@ class VocalTractEquations():
     
     ''' ==================================== '''
     ''' =========== Dissipation ============ '''
+    def compute_w(self):
+        w = [self.qL, *(self.q_nm_vec), self.qR]
+
     def compute_zw(self):
         self.zw = []
-        for i in range(self.N):
+        coef_visq = 16*sy.pi*self.mu0
+
+        # Premier tronçon, resistance gauche
+        expr = coef_visq * self.ell(1)**2 / self.vol(1)
+        self.zw.append(expr)
+
+        # Resistance équivalente interne
+        for i in range(self.N-1):
             tract_ind = i+1
-            expr = 8*sy.pi*self.mu0*4*self.ell(tract_ind)**2/self.vol(tract_ind)
+            expr = coef_visq*(self.ell(i+1)**2/self.vol(i+1) + \
+                              self.ell(i+2)**2/self.vol(i+2))
             self.zw.append(expr)
+
+        # Dernière
+        expr = coef_visq * self.ell(self.N)**2 / self.vol(self.N)
+        self.zw.append(expr)
         
     ''' =========================================== '''
     ''' =================== Accesseurs ============ '''
@@ -422,14 +442,9 @@ class VocalTractEquations():
     def mu(self,i):
         return (self.m(i)/self.ell(i)**2)
 
-    def qLmu(self,i):
-        return self.qL_vec[i-1]
-
-    def qRmu(self,i):
-        return self.qR_vec[i-1]
+    def qmu(self,i):
+        return self.q_nm_vec[i-1]
     
-    def psiLmu(self,i):
-        return self.psiL_vec[i-1]
+    def psimu(self,i):
+        return self.psi_nm_vec[i-1]
    
-    def psiRmu(self,i):
-        return self.psiR_vec[i-1]
