@@ -131,7 +131,13 @@ class VocalTractEquations():
         for i in range(self.N_lambda):
             tmp_symb = sy.symbols('Delta_{}'.format(10*(i+1) + (i+2)))
             self.delta_nm_vec.append(tmp_symb)
-            
+        
+        # Dissipations fluide
+        self.qL_vec = sy.symbols('q_L:{}'.format(self.N+1), **PPTY_STATE_VAR)
+        self.qR_vec = sy.symbols('q_R:{}'.format(self.N+1), **PPTY_STATE_VAR)
+        self.psiL_vec = sy.symbols('Psi_L:{}^mu'.format(self.N+1), **PPTY_STATE_VAR)
+        self.psiR_vec = sy.symbols('Psi_R:{}^mu'.format(self.N+1), **PPTY_STATE_VAR)
+        
         # Ports
         self.psiL, self.psiR = sy.symbols('Psi_L Psi_R', **PPTY_STATE_VAR)
         self.qL, self.qR  = sy.symbols('q_L q_R', **PPTY_STATE_VAR)
@@ -274,7 +280,7 @@ class VocalTractEquations():
     def compute_Jwx(self):
         self.Jwx = sy.SparseMatrix(sy.zeros(2*self.N,
                                             self.Nxi*self.N-self.N_lambda))
-        self.Jwx[::2*self.N, ::2*self.N] = sy.SparseMatrix(sy.eye(2*self.N))
+        self.Jwx[0:2*self.N, 0:2*self.N] = sy.SparseMatrix(sy.eye(2*self.N))
 
     ''' =========================================== '''
     ''' ======= Changement de variable ============ '''
@@ -337,6 +343,11 @@ class VocalTractEquations():
                     self.Q12[i, j] = sy.Rational(1,2) * self.mu(i+2)
         self.Q12 = sy.SparseMatrix(self.Q12)   
         return self.Q12
+    
+    ''' ==================================== '''
+    ''' =========== Dissipation ============ '''
+    def compute_zw(self):
+        pass
         
     ''' =========================================== '''
     ''' =================== Accesseurs ============ '''
