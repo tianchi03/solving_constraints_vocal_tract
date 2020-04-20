@@ -414,3 +414,15 @@ class VocalTractEquations():
     
     def mu(self,i):
         return (self.m(i)/self.ell(i)**2)
+
+    def qLmu(self,i):
+        return self.qL_vec[i-1]
+
+    def qRmu(self,i):
+        return self.qR_vec[i-1]
+    
+    def psiLmu(self,i):
+        return self.psiL_vec[i-1]
+   
+    def psiRmu(self,i):
+        return self.psiR_vec[i-1]
