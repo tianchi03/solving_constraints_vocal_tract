@@ -1,0 +1,3 @@
+/simulations_test/03_data/*
+/simulations_test/__pycache__/*
+*.dat
