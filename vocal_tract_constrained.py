@@ -3,6 +3,8 @@ import sympy as sy
 #sys.path.append('/home/victorw/anaconda/envs/dev_pyphs/workspace/lib_pyphs_dev/')
 import pyphs
 
+from IPython.core.display import display
+
 PPTY_PHY_PARAMS = {"positive": True, "real" : True }
 PPTY_STATE_VAR  = {"real" : True }
 
@@ -53,14 +55,16 @@ class VocalTractLumpedParameter(VocalTractBase):
         self.add_ports(equations.U, equations.Y)
 
         # Dissipations
-        for i, w in enumerate(equations.w):
-            zw = w * equations.zw[i]
-            self.add_dissipations(w, zw)
-        
+        if False:
+            for i, w in enumerate(equations.w):
+                zw = w * equations.zw[i]
+                self.add_dissipations(w, zw)
+            self.set_Jwx(equations.Jwx)
+
         # Interconnexion matrix
         self.set_Jxx(equations.Jxx)
         self.set_Jyx(equations.Jyx)
-        self.set_Jwx(equations.Jwx)
+
         
         # Valeurs des subs
         self.subs.update(
@@ -76,6 +80,7 @@ class VocalTractEquations():
     """
         
     def __init__(self, N=2):
+        self.VERBOSE = True
         # --- Constantes --- #
         self.N        = N                  # Nombre de tronçons
         self.Nxi      = 5                  # Nombre d'état par tronçon
@@ -332,6 +337,10 @@ class VocalTractEquations():
         Q22inv = self.Q22.inv(method='LDL')
         X_nu_temp = sy.Matrix([self.nuL_vec[0]] + self.nu_nm_vec + [self.nuR_vec[-1]])
         self.update_Delta_eq = -Q22inv*self.Q12*X_nu_temp
+
+        if self.VERBOSE:
+            for expr in self.update_Delta_eq:
+                display(expr)
     
     def compute_Q22(self):
         self.Q22 = sy.SparseMatrix(sy.zeros(self.N_lambda))
