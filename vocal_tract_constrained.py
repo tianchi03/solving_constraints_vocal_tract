@@ -8,8 +8,10 @@ from IPython.core.display import display
 PPTY_PHY_PARAMS = {"positive": True, "real" : True }
 PPTY_STATE_VAR  = {"real" : True }
 
+fcancel = lambda x: x.cancel()
+
 ################
-#### VERSION DU 17 avril 2020
+#### VERSION DU 23 avril 2020
 #### Édition spéciale du confinement
 
 
@@ -86,6 +88,7 @@ class VocalTractEquations():
         self.Nxi      = 5                  # Nombre d'état par tronçon
         self.N_lambda = self.N-1           # Nombre de contraintes
         self.Nx       = self.N * self.Nxi  # Nombre total d'état sys. non contraint
+        self.observers = {}                # Dictionnaire des observateurs
         
         self.create_symbols()
         
@@ -104,7 +107,7 @@ class VocalTractEquations():
         
         # Observateurs
         self.O = sy.Matrix(self.delta_nm_vec)
-        self.observers = {}
+
         
         for i in range(self.N_lambda):
             self.observers[self.O[i]] = self.update_Delta_eq[i] 
@@ -334,20 +337,16 @@ class VocalTractEquations():
     def compute_Delta_update_eq(self):
         self.compute_Q22()
         self.compute_Q12()
-        Q22inv = self.Q22.inv(method='LDL')
         X_nu_temp = sy.Matrix([self.nuL_vec[0]] + self.nu_nm_vec + [self.nuR_vec[-1]])
-        self.update_Delta_eq = -Q22inv*self.Q12*X_nu_temp
-
-        if self.VERBOSE:
-            for expr in self.update_Delta_eq:
-                display(expr)
+        #Q22inv = self.Q22.inv(method='LDL')
+        self.update_Delta_eq = LDL_solve(self.Q22, -1*self.Q12*X_nu_temp).applyfunc(fcancel)
     
     def compute_Q22(self):
         self.Q22 = sy.SparseMatrix(sy.zeros(self.N_lambda))
         for i in range(self.N_lambda):
             for j in range(self.N_lambda):
                 if i == j:
-                    self.Q22[i, j] = self.mu(i+1) + self.mu(i+2)
+                    self.Q22[i, j] = self.mu_add_mu(i+1,i+2)
                 if j == i-1:
                     self.Q22[i, j] = sy.Rational(1,2) * self.mu(i+1)
                 if j == i+1:
@@ -361,7 +360,7 @@ class VocalTractEquations():
                 if i == j:
                     self.Q12[i, j] = -sy.Rational(1,2) * self.mu(i+1)
                 if j == i+1:
-                    self.Q12[i, j] = sy.Rational(1,2) * (self.mu(i+1)-self.mu(i+2))
+                    self.Q12[i, j] = sy.Rational(1,2) * self.mu_minus_mu(i+1,i+2)
                 if j == i+2:
                     self.Q12[i, j] = sy.Rational(1,2) * self.mu(i+2)
         self.Q12 = sy.SparseMatrix(self.Q12)   
@@ -455,11 +454,53 @@ class VocalTractEquations():
         return (self.rho(i) * self.vol(i))
     
     def mu(self,i):
-        return (self.m(i)/self.ell(i)**2)
+        symb = self.phy_symb('mu', ind=i)
+        if symb not in self.observers.keys():
+            self.observers[symb] = (self.m(i)/self.ell(i)**2)
+            
+        return symb
+    
+    def mu_add_mu(self,ind1, ind2):
+        ''' 
+        Returns a symbols that looks like "mu_1 \oplus mu_2" 
+        which will be calculated separetely. It is stored as an observer
+        '''
+        str_symb = r'(\mu_' + str(ind1) + r'+\mu_' + str(ind2) + ')'
+        
+        symb = sy.symbols(str_symb, **PPTY_STATE_VAR)
+        
+        if symb not in self.observers.keys():
+            self.observers[symb] = self.mu(ind1) + self.mu(ind2)
+            
+        return symb
+    
+    def mu_minus_mu(self,ind1, ind2):
+        ''' 
+        Returns a symbols that looks like "mu_1 \oplus mu_2" 
+        which will be calculated separetely. It is stored as an observer
+        '''
+        str_symb = r'(\mu_' + str(ind1) + r'-\mu_' + str(ind2) + ')'
+        
+        symb = sy.symbols(str_symb, **PPTY_STATE_VAR)
+        
+        if symb not in self.observers.keys():
+            self.observers[symb] = self.mu(ind1) + self.mu(ind2)
+            
+        return symb
 
     def qmu(self,i):
         return self.q_nm_vec[i-1]
     
     def psimu(self,i):
         return self.psi_nm_vec[i-1]
+    
+    def phy_symb(self, str_symb, ind=None):
+        assert type(str_symb) is str, "First arg must be a string"
+
+        if ind is None:
+            symb = sy.symbols(str_symb, **PPTY_STATE_VAR)
+        else:
+            assert type(ind) is int, "keyarg must be int"
+            symb = sy.symbols(str_symb + '_' + str(ind), **PPTY_STATE_VAR)
+        return symb
    
