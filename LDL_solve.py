@@ -1,3 +1,18 @@
+import sympy as sy
+
+def LDL_solve(matrix, rhs):
+        L, D = LDL_sparse(matrix)
+        Y = lower_triangular_solve(L, rhs)
+        Z = diagonal_solve(D, Y)
+        return upper_triangular_solve(L.T, Z)
+
+def LDL_inv_fast(matrix):
+        rhs = sy.eye(matrix.rows)
+        L, D = LDL_sparse(matrix)
+        Y = sy.SparseMatrix(lower_triangular_solve(L, rhs))
+        Z = sy.SparseMatrix(diagonal_solve(D, rhs))
+        return (Y.T)._eval_matrix_mul(Z._eval_matrix_mul(Y))
+
 def LDL_sparse(matrix):
         """Algorithm for numeric LDL factorization, exploiting sparse structure.
         """
@@ -21,9 +36,9 @@ def LDL_sparse(matrix):
                         else:
                             break
                     L[i, j] -= summ #ici
-                    L[i, j] /= D[j, j] #ici
+                    L[i, j] = (L[i,j] / D[j, j]).cancel() #ici
                 else: # i == j
-                    D[i, i] = self[i, i].cancel() ### cancel rajouté
+                    D[i, i] = matrix[i, i].cancel() ### cancel rajouté
                     summ = 0
                     for k in Lrowstruc[i]:
                         if k < i:
@@ -33,18 +48,7 @@ def LDL_sparse(matrix):
                     D[i, i] -= summ
                     D[i,i] = D[i,i].cancel() #rajouté
 
-    return L, D
-
-def LDL_solve(matrix, rhs):
-        # for speed reasons, this is not uncommented, but if you are
-        # having difficulties, try uncommenting to make sure that the
-        # input matrix is symmetric
-
-        #assert matrix.is_symmetric()
-        L, D = LDL_sparse(matrix)
-        Z = lower_triangular_solve(L, rhs)
-        Y = diagonal_solve(D, Z)
-        return upper_triangular_solve(L, Y)).T
+        return L, D
 
 def lower_triangular_solve(matrix, rhs):
     """Fast algorithm for solving a lower-triangular system,
@@ -55,11 +59,11 @@ def lower_triangular_solve(matrix, rhs):
         if i > j:
             rows[i].append((j, v))
     X = rhs.as_mutable().copy()
-    for j in range(rhs.cols): #on peut éventuellement rajouter des cancel ici
+    for j in range(rhs.cols):
         for i in range(rhs.rows):
             for u, v in rows[i]:
-                X[i, j] -= v*X[u, j]
-            X[i, j] /= matrix[i, i]
+                X[i, j] -= (v*X[u, j]).cancel()
+            X[i, j] /=  matrix[i, i]
     return matrix._new(X)
 
 def diagonal_solve(matrix, rhs):
@@ -68,5 +72,23 @@ def diagonal_solve(matrix, rhs):
     """
     return matrix._new(
         rhs.rows, rhs.cols, lambda i, j: rhs[i, j] / matrix[i, i])
+
+def upper_triangular_solve(matrix, rhs):
+        """Fast algorithm for solving an upper-triangular system,
+        exploiting the sparsity of the given matrix.
+        """
+        rows = [[] for i in range(matrix.rows)]
+        for i, j, v in matrix.row_list():
+            if i < j:
+                rows[i].append((j, v))
+        X = rhs.as_mutable().copy()
+        for j in range(rhs.cols):
+            for i in reversed(range(rhs.rows)):
+                for u, v in reversed(rows[i]):
+                    X[i, j] -= (v*X[u, j]).cancel()
+                X[i, j] /= matrix[i, i]
+                # X[i, j] = (X[i,j] / matrix[i, i]).cancel()
+        return matrix._new(X)
+
 
 
