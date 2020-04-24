@@ -128,17 +128,17 @@ class VocalTractEquations():
         self.nuL_vec  = sy.symbols('nu_L1:{}'.format(self.N+1), **PPTY_STATE_VAR)
         self.nuR_vec  = sy.symbols('nu_R1:{}'.format(self.N+1), **PPTY_STATE_VAR)
         self.Pi_y_vec = sy.symbols('Pi_y1:{}'.format(self.N+1), **PPTY_STATE_VAR)
-        self.rho_vec  = sy.symbols('rho_1:{}'.format(self.N+1), **PPTY_PHY_PARAMS)
+        self.rho_vec  = sy.symbols('rho_1:{}'.format(self.N+1), **PPTY_STATE_VAR)
         self.vol_vec  = sy.symbols('V_1:{}'.format(self.N+1),   **PPTY_STATE_VAR)
         
         # Paramètres
         self.ell_vec  = sy.symbols('ell_1:{}'.format(self.N+1), **PPTY_PHY_PARAMS)
         self.L_vec    = sy.symbols('L_1:{}'.format(self.N+1),   **PPTY_PHY_PARAMS)
         self.V0_vec   = sy.symbols('V_0_1:{}'.format(self.N+1), **PPTY_PHY_PARAMS)
-        self.rho_0    = sy.symbols('rho_0', **PPTY_PHY_PARAMS)
-        self.gamma    = sy.symbols('gamma', **PPTY_PHY_PARAMS)
-        self.P0       = sy.symbols('P_0', **PPTY_PHY_PARAMS)
-        self.mu0      = sy.symbols('mu_0', **PPTY_PHY_PARAMS) # viscosité
+        self.rho_0    = sy.symbols('rho_0',                     **PPTY_PHY_PARAMS)
+        self.gamma    = sy.symbols('gamma',                     **PPTY_PHY_PARAMS)
+        self.P0       = sy.symbols('P_0',                       **PPTY_PHY_PARAMS)
+        self.mu0      = sy.symbols('mu_0',                      **PPTY_PHY_PARAMS) # viscosité
         
         # ------ États contraints ------
         self.nu_nm_vec = []
@@ -148,7 +148,7 @@ class VocalTractEquations():
             
         self.delta_nm_vec = []
         for i in range(self.N_lambda):
-            tmp_symb = sy.symbols('Delta_{}'.format(10*(i+1) + (i+2)))
+            tmp_symb = sy.symbols('Delta_{}'.format(10*(i+1) + (i+2))n **PPTY_STATE_VAR)
             self.delta_nm_vec.append(tmp_symb)
         
         # Dissipations fluide
@@ -448,7 +448,7 @@ class VocalTractEquations():
         return self.ell_vec[i-1]
     
     def Sw(self, i):
-        return self.ell_vec[i-1]*self.L_vec[i-1]
+        return 2*self.ell_vec[i-1]*self.L_vec[i-1]
     
     def m(self,i):
         return (self.rho(i) * self.vol(i))
@@ -481,10 +481,10 @@ class VocalTractEquations():
         '''
         str_symb = r'(\mu_' + str(ind1) + r'-\mu_' + str(ind2) + ')'
         
-        symb = sy.symbols(str_symb, **PPTY_STATE_VAR)
+        symb = sy.symbols(str_symb, **PPTY_PHY_PARAMS)
         
         if symb not in self.observers.keys():
-            self.observers[symb] = self.mu(ind1) + self.mu(ind2)
+            self.observers[symb] = self.mu(ind1) - self.mu(ind2)
             
         return symb
 
