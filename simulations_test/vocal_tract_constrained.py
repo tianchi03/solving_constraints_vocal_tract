@@ -16,7 +16,7 @@ fcancel = lambda x: x.cancel()
 VERBOSE = 2
 
 # Configuration for naming pickled equations
-PICKLE_FOLDER_NAME = '04_equations'
+PICKLE_FOLDER_PATH = '04_equations'
 PICKLE_FILE_NAME   =  'equations_vocalTract_N='
     
 
@@ -26,6 +26,9 @@ PICKLE_FILE_NAME   =  'equations_vocalTract_N='
 #### Édition spéciale du confinement 3
 #### Ajout de la sérialisation/décompression si les équations ont déjà été calculées ou pas
 
+def prtVerbose(msg, lvl):
+    if VERBOSE >= lvl:
+        print(msg)
 
 class VocalTractBase(pyphs.Core):
     """
@@ -53,13 +56,19 @@ class VocalTractLumpedParameter(VocalTractBase):
     def __init__(self, label="vocal_tract_rho_V", N=2, **kwargs):
         # Instanciation du core
         # NOTE: super() permet d'hériter de la classe
-        print(PICKLE_FOLDER_NAME)
         super().__init__(label=label)
         
         # Equations
-        print("Computing equations pour N = {}...".format(N))
-        equations = VocalTractEquations(N=N)
-        print("Done !")
+        if self.pickle_exists(N):
+            equations = self.open_jar(N)
+        else:
+            prtVerbose("Computing equations pour N = {}...".format(N), 2)
+            equations = VocalTractEquations(N=N)
+            prtVerbose("Done !", 2)
+
+            prtVerbose("Pickling it...", 2)
+            self.pickle_equations(N, equations)
+            prtVerbose("Done", 2)
         
         # Composants stockants
         H = equations.Ham_cstrd
@@ -89,18 +98,61 @@ class VocalTractLumpedParameter(VocalTractBase):
         )
                 
         
-        self.pickle_equations()
+        # self.pickle_equations()
+        self.build_pickle_numbers()
         
-    def check_pantry_for_pickle(self, N):
-        
+    def pickle_exists(self, N):
+        ''' 
+        Returns True is the equations are pickled in a file aleady, False
+        otherwise 
+        '''
+        N_list = self.build_pickle_numbers()
+        return str(N) in N_list
+
+    def build_pickle_numbers(self):
+        ''' 
+        Builds a list containing the number of vocal tracts corresponding
+        to every existing pickled file.
+
+        OUTPUTS:
+            - list (int)
+        '''
+        filenames = []
+        for (_, _, filename) in os.walk(PICKLE_FOLDER_PATH):
+            filenames.extend(filename)
+            break
+
+        N_list = []
+        for fn in filenames:
+            for i, ch in enumerate(fn):
+                if ch == '=':
+                    N_list.append(fn[i+1:])
+
+        return N_list
+
+    def open_jar(self, N):
+        ''' Decompress pickled equations for a given number of tube
+        INPUT:
+            - N (int): number of tubes for the tract model
+        OUTPUT:
+            - VocalTractEquations (obj): object containing equations
+        '''
+        PATH = os.path.join(PICKLE_FOLDER_PATH, PICKLE_FILE_NAME + str(N))
+        with open(PATH, "rb") as FID:
+            obj = pickle.load(FID)
+            if VERBOSE >= 2:
+                print('Object succesfully loaded')
+
+        return obj
     
-    def pickle_equations(self, N):
-        PATH = os.path.join(PICKLE_FOLDER_NAME, PICKLE_FILE_NAME + str(N))
-        FID = open(PATH, 'wb')
-        pickle.dump(self, FID)
+    def pickle_equations(self, N, obj):
+        ''' Saves class into a file for later loading '''
+        PATH = os.path.join(PICKLE_FOLDER_PATH, PICKLE_FILE_NAME + str(N))
+        with open(PATH, 'wb') as FID:
+            pickle.dump(obj, FID)
+            if VERBOSE >= 2:
+                print('Object succesfully pickled at "' + PATH + '"')
         
-        if VERBOSE >= 2:
-            print('Object succesfully pickled at "' + PATH '"')
         
 
 
