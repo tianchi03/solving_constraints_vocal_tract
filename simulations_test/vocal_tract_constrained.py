@@ -1,19 +1,30 @@
 import sys
+import os
 import sympy as sy
 #sys.path.append('/home/victorw/anaconda/envs/dev_pyphs/workspace/lib_pyphs_dev/')
 import pyphs
 
 from IPython.core.display import display
 from LDL_solve import *
+import pickle
 
 PPTY_PHY_PARAMS = {"positive": True, "real" : True }
 PPTY_STATE_VAR  = {"real" : True }
 
 fcancel = lambda x: x.cancel()
 
+VERBOSE = 2
+
+# Configuration for naming pickled equations
+PICKLE_FOLDER_NAME = '04_equations'
+PICKLE_FILE_NAME   =  'equations_vocalTract_N='
+    
+
+
 ################
 #### VERSION DU 23 avril 2020
-#### Édition spéciale du confinement
+#### Édition spéciale du confinement 3
+#### Ajout de la sérialisation/décompression si les équations ont déjà été calculées ou pas
 
 
 class VocalTractBase(pyphs.Core):
@@ -37,9 +48,12 @@ class VocalTractLumpedParameter(VocalTractBase):
         OUTPUT:
             - core (pyphs.Core): objet core pyphs
     """    
+    
+    
     def __init__(self, label="vocal_tract_rho_V", N=2, **kwargs):
         # Instanciation du core
         # NOTE: super() permet d'hériter de la classe
+        print(PICKLE_FOLDER_NAME)
         super().__init__(label=label)
         
         # Equations
@@ -73,6 +87,20 @@ class VocalTractLumpedParameter(VocalTractBase):
         self.subs.update(
             {self.symbols(k, **PPTY_PHY_PARAMS): v for k,v in kwargs.items()}
         )
+                
+        
+        self.pickle_equations()
+        
+    def check_pantry_for_pickle(self, N):
+        
+    
+    def pickle_equations(self, N):
+        PATH = os.path.join(PICKLE_FOLDER_NAME, PICKLE_FILE_NAME + str(N))
+        FID = open(PATH, 'wb')
+        pickle.dump(self, FID)
+        
+        if VERBOSE >= 2:
+            print('Object succesfully pickled at "' + PATH '"')
         
 
 

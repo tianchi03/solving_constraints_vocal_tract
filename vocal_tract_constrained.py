@@ -4,6 +4,7 @@ import sympy as sy
 import pyphs
 
 from IPython.core.display import display
+from LDL_solve import *
 
 PPTY_PHY_PARAMS = {"positive": True, "real" : True }
 PPTY_STATE_VAR  = {"real" : True }
@@ -148,7 +149,7 @@ class VocalTractEquations():
             
         self.delta_nm_vec = []
         for i in range(self.N_lambda):
-            tmp_symb = sy.symbols('Delta_{}'.format(10*(i+1) + (i+2))n **PPTY_STATE_VAR)
+            tmp_symb = sy.symbols('Delta_{}'.format(10*(i+1) + (i+2)), **PPTY_STATE_VAR)
             self.delta_nm_vec.append(tmp_symb)
         
         # Dissipations fluide
